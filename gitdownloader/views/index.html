@@ -1,0 +1,163 @@
+{% extends "layout.html" %}
+{% block content %}
+<!-- .container is main centered wrapper -->
+        <div class="container">
+        <center>
+        <h1>Simple Git Repo Downloader</h1>
+            <div class="row">
+                <div class="column column-50 column-offset-25">
+                <form>
+                  <fieldset>
+                    <label for="urlField">Enter Git URL</label>
+                    <input type="text"  placeholder="Type a remote git repo" id="urlField">
+                    <input class="button-primary" type="submit" value="Download" id="download">
+                  </fieldset>
+                </form>
+                    
+                    <p>
+                    <div id="status">
+                    </div>
+                    <div id="sessions"></div>
+                    </p>
+
+                </div>
+            </div>
+        </center>
+        </div>
+        <script src="/assets/bower_components/superplaceholder/dist/superplaceholder.min.js"></script>
+        <script src="https://rawgit.com/fschaefer/Timer.js/master/Timer.js"></script>
+        <script src="https://rawgit.com/krampstudio/aja.js/master/aja.min.js"></script>
+        <script>
+            String.prototype.formatUnicorn = String.prototype.formatUnicorn ||
+            function () {
+                "use strict";
+                var str = this.toString();
+                if (arguments.length) {
+                    var t = typeof arguments[0];
+                    var key;
+                    var args = ("string" === t || "number" === t) ?
+                        Array.prototype.slice.call(arguments)
+                        : arguments[0];
+
+                    for (key in args) {
+                        str = str.replace(new RegExp("\\{" + key + "\\}", "gi"), args[key]);
+                    }
+                }
+
+                return str;
+            };
+            
+            timer = new Timer(500);
+
+            superplaceholder({
+                el: document.querySelector('input'),
+                sentences: [ 'Type a remote git repo','https://github.com/someuser/somerepo']
+            });
+            // helper for enabling IE 8 event bindings
+            function addEvent(el, type, handler) {
+                if (el.attachEvent) el.attachEvent('on'+type, handler); else el.addEventListener(type, handler);
+            }
+            function removeEvent(el, type, handler) {
+                if (el.detachEvent) el.detachEvent('on'+type, handler); else el.removeEventListener(type, handler);
+            }
+            var el = document.getElementById('download');
+            // attach anonymous function to click event
+            addEvent(el, 'click', function(event){ 
+                                        event.preventDefault(); 
+                                        document.getElementById("status").innerHTML = "<blockquote 'update'><div class='spinner'></div><span id='message'>Clicked #Download</span></blockquote>";
+                                        callSubmit();
+                                                  
+                                                 });
+            
+            
+            function callSubmit(){
+                aja()
+                .method('POST')
+                .url('/download')
+                .timeout(2500)
+                .body({url: document.getElementById("urlField").value   })
+                .on('success', function(data){
+                    //well done
+                    if(data["Submitted"]==true) document.getElementById("message").innerHTML = "Downloading...";
+                    
+                })/*.on('timeout', functon(){
+                    // uh oh... Request ended. Do something fancy here, don't let your user wait forever!
+                    document.getElementById("status").innerHTML = "Request Timedout";
+                })*/
+                .go();
+                retry = 0;
+                timer.every(500, checkStatus);
+                timer.start()
+                document.getElementById("urlField").disabled = true;
+
+            }
+            
+            retry = 0;
+            
+            function checkStatus(){
+            
+                var checked = false;
+                if(retry<10){
+                    
+                    aja()
+                    .method('POST')
+                    .url('/status')
+                    .timeout(2500)
+                    .body({url: document.getElementById("urlField").value   })
+                    .on('success', function(data){
+                            //well done
+                            if(data["Completed"]=="Completed") {
+                                document.getElementById("status").innerHTML = "Download Completed...";
+                                checked=true;
+                                stoptimer();
+                                addCompleteStat(document.getElementById("urlField").value,data["Completed"]);
+
+                            } else if (data["Completed"]=="In Progress") {
+                                    checked=true;
+                                    retry=0;
+                            } else if(data["Completed"]=="Failed"){
+                                document.getElementById("status").innerHTML = "Download Failed...";
+                                checked=true;
+                                stoptimer();
+                                addCompleteStat(document.getElementById("urlField").value,data["Completed"]);
+
+                            }
+                                
+                        
+                    })
+                    /*.on('timeout', functon(){
+                        // uh oh... Request ended. Do something fancy here, don't let your user wait forever!
+                        document.getElementById("status").innerHTML = "Request Timedout";
+                    })*/
+                    .go();
+                    if(checked==false) {
+                        ++retry;
+                    }
+                } else {
+                    document.getElementById("status").innerHTML = "Maximum Retry Limit Reached...";
+                    stoptimer();
+
+                }
+                
+            }            
+            function addCompleteStat(url,status){
+                var ul = document.getElementById("sessions");
+                var li = document.createElement("div");
+                li.appendChild(document.createTextNode(url+":"+status));
+                ul.appendChild(li);
+            }
+            function stoptimer(){
+                retry=0;
+                timer.unbind(checkStatus);
+                timer.after(5000,function(){
+                        document.getElementById("status").innerHTML = "";
+                        timer.stop();
+
+                    });
+                document.getElementById("urlField").disabled = false;
+
+            }
+
+        </script>
+		
+{% endblock %}

@@ -1,0 +1,29 @@
+{
+  "name": "superplaceholder",
+  "main": "dist/superplaceholder.js",
+  "author": "Kushagra Gour",
+  "ignore": [
+    "CONTRIBUTING.md",
+    "Gruntfile.js"
+  ],
+  "keywords": [
+    "placeholder",
+    "form",
+    "input",
+    "ux",
+    "javascript",
+    "library"
+  ],
+  "homepage": "https://github.com/chinchang/superplaceholder.js",
+  "version": "0.1.1",
+  "_release": "0.1.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "v0.1.1",
+    "commit": "eca5fd2dce025711238f10ebc28697ab46ae6a07"
+  },
+  "_source": "https://github.com/chinchang/superplaceholder.js.git",
+  "_target": "~0.1.1",
+  "_originalSource": "superplaceholder",
+  "_direct": true
+}
